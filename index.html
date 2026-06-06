@@ -75,7 +75,7 @@
             background: #eef2f5; border-radius: 8px; text-align: left;
         }
         
-        /* 式表示エリア（折り返し対応） */
+        /* 式表示エリア */
         .equation-area {
             display: flex;
             flex-wrap: wrap;
@@ -140,6 +140,12 @@
         .formula { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
         .models { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; max-width: none; }
         
+        /* 分子パッケージの見た目 */
+        .molecule-package {
+            display: flex; flex-wrap: wrap; margin: 2px; padding: 4px; 
+            border: 1px dotted #aaa; border-radius: 4px; justify-content: center;
+        }
+
         .atom {
             width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 14px; font-weight: bold; font-family: Arial, sans-serif;
@@ -156,14 +162,8 @@
         .atom-Cl { background: #2ecc71; color: #fff; }
         .atom-N { background: #3498db; color: #fff; }
         .atom-Ba { background: #1abc9c; color: #fff; }
-        .atom-Na { background: #f39c12; color: #fff; } /* Na追加 */
+        .atom-Na { background: #f39c12; color: #fff; }
 
-        /* 表スタイル */
-        table { width: 100%; max-width: 400px; margin: 0 auto; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 18px; }
-        th { background: #f8f9fa; }
-        .atom-cell { display: flex; align-items: center; justify-content: center; gap: 10px; }
-        
         /* Step3: 最終式入力フェーズ用スタイル */
         .final-eq-container {
             display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
@@ -210,19 +210,6 @@
             <button id="main-action-btn" class="main-btn" onclick="handleMainAction()">化学式を判定する</button>
             <div id="feedback-msg" class="feedback-msg"></div>
         </div>
-
-        <div id="table-area" class="hidden">
-            <table id="atom-table">
-                <thead>
-                    <tr>
-                        <th>原子</th>
-                        <th>反応前 (左)</th>
-                        <th>反応後 (右)</th>
-                    </tr>
-                </thead>
-                <tbody id="atom-table-body"></tbody>
-            </table>
-        </div>
     </div>
 </div>
 
@@ -237,7 +224,7 @@
             ]
         },
         {
-            id: 2, title: "② 炭酸水素ナトリウム", text: "② 炭酸水素ナトリウムを加熱すると、炭酸ナトリウムと水と二酸化炭素に分解した。",
+            id: 2, title: "② 炭酸水素ナトリウムの熱分解", text: "② 炭酸水素ナトリウム(NaHCO3)を加熱すると、炭酸ナトリウム(Na2CO3)と水と二酸化炭素に分解した。",
             reactants: [{ name: "炭酸水素ナトリウム", formula: "NaHCO3", html: "NaHCO<sub>3</sub>", atoms: { Na: 1, H: 1, C: 1, O: 3 }, coeff: 1 }],
             products: [
                 { name: "炭酸ナトリウム", formula: "Na2CO3", html: "Na<sub>2</sub>CO<sub>3</sub>", atoms: { Na: 2, C: 1, O: 3 }, coeff: 1 },
@@ -256,12 +243,12 @@
             products: [{ name: "硫化銅", formula: "CuS", html: "CuS", atoms: { Cu: 1, S: 1 }, visualOrder: ['Cu', 'S'], coeff: 1 }]
         },
         {
-            id: 5, title: "⑤ 銅の酸化", text: "⑤ うずまき銅線を空気中で加熱すると、酸化銅が生成した。",
+            id: 5, title: "⑤ 銅と酸素（酸化）", text: "⑤ うずまき銅線を空気中で加熱すると、酸化銅が生成した。",
             reactants: [{ name: "銅", formula: "Cu", html: "Cu", atoms: { Cu: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder: ['O', 'O'], coeff: 1 }],
             products: [{ name: "酸化銅", formula: "CuO", html: "CuO", atoms: { Cu: 1, O: 1 }, visualOrder: ['Cu', 'O'], coeff: 1 }]
         },
         {
-            id: 6, title: "⑥ Mgの酸化", text: "⑥ マグネシウムを空気中で加熱すると、酸化マグネシウムが生成した。",
+            id: 6, title: "⑥ Mgと酸素（酸化）", text: "⑥ マグネシウムを空気中で加熱すると、酸化マグネシウムが生成した。",
             reactants: [{ name: "マグネシウム", formula: "Mg", html: "Mg", atoms: { Mg: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder: ['O','O'], coeff: 1 }],
             products: [{ name: "酸化マグネシウム", formula: "MgO", html: "MgO", atoms: { Mg: 1, O: 1 }, visualOrder: ['Mg','O'], coeff: 1 }]
         },
@@ -281,12 +268,12 @@
             products: [{ name: "水", formula: "H2O", html: "H<sub>2</sub>O", atoms: { H: 2, O: 1 }, visualOrder: ['H', 'O', 'H'], coeff: 1 }]
         },
         {
-            id: 10, title: "⑩ 炭酸カルシウム", text: "⑩ 炭酸カルシウム(CaCO3) と塩化水素の水溶液(塩酸)を反応させると、塩化カルシウム(CaCl2) と水と二酸化炭素が発生した。",
+            id: 10, title: "⑩ 炭酸カルシウムと塩酸", text: "⑩ 炭酸カルシウム(CaCO3) と塩化水素の水溶液(塩酸)を反応させると、塩化カルシウム(CaCl2) と水と二酸化炭素が発生した。",
             reactants: [{ name: "炭酸カルシウム", formula: "CaCO3", html: "CaCO<sub>3</sub>", atoms: { Ca: 1, C: 1, O: 3 }, coeff: 1 }, { name: "塩化水素", formula: "HCl", html: "HCl", atoms: { H: 1, Cl: 1 }, visualOrder: ['H','Cl'], coeff: 1 }],
             products: [{ name: "塩化カルシウム", formula: "CaCl2", html: "CaCl<sub>2</sub>", atoms: { Ca: 1, Cl: 2 }, visualOrder: ['Cl','Ca','Cl'], coeff: 1 }, { name: "水", formula: "H2O", html: "H<sub>2</sub>O", atoms: { H: 2, O: 1 }, visualOrder: ['H', 'O', 'H'], coeff: 1 }, { name: "二酸化炭素", formula: "CO2", html: "CO<sub>2</sub>", atoms: { C: 1, O: 2 }, visualOrder: ['O', 'C', 'O'], coeff: 1 }]
         },
         {
-            id: 11, title: "⑪ 酸化銅と水素", text: "⑪ 酸化銅を気体の水素中に入れると、水が発生し、酸化銅は銅に変化した。",
+            id: 11, title: "⑪ 酸化銅と水素（還元）", text: "⑪ 酸化銅を気体の水素中に入れると、水が発生し、酸化銅は銅に変化した。",
             reactants: [{ name: "酸化銅", formula: "CuO", html: "CuO", atoms: { Cu: 1, O: 1 }, visualOrder: ['Cu','O'], coeff: 1 }, { name: "水素", formula: "H2", html: "H<sub>2</sub>", atoms: { H: 2 }, visualOrder: ['H','H'], coeff: 1 }],
             products: [{ name: "銅", formula: "Cu", html: "Cu", atoms: { Cu: 1 }, coeff: 1 }, { name: "水", formula: "H2O", html: "H<sub>2</sub>O", atoms: { H: 2, O: 1 }, visualOrder: ['H', 'O', 'H'], coeff: 1 }]
         },
@@ -333,22 +320,18 @@
         renderSidebar();
 
         const p = problems[currentProblemIndex];
-        // 問題文中の化学式（下付き文字）を置換
         let formattedText = p.text.replace(/Fe2O3/g, 'Fe<sub>2</sub>O<sub>3</sub>')
                                   .replace(/CaCO3/g, 'CaCO<sub>3</sub>')
                                   .replace(/NaHCO3/g, 'NaHCO<sub>3</sub>')
                                   .replace(/Na2CO3/g, 'Na<sub>2</sub>CO<sub>3</sub>');
         document.getElementById('problem-text').innerHTML = formattedText;
         
-        // 係数リセット
         p.reactants.forEach(r => r.coeff = 1);
         p.products.forEach(p => p.coeff = 1);
         
-        document.getElementById('table-area').classList.add('hidden');
         document.getElementById('step3-area').classList.add('hidden');
         document.getElementById('equation-area').classList.remove('hidden');
         
-        // メインボタンを確実に表示する
         const mainBtn = document.getElementById('main-action-btn');
         mainBtn.style.display = 'inline-block';
         
@@ -422,7 +405,7 @@
         });
 
         if (allCorrect) {
-            setFeedback('大正解！次は左右の原子の数を合わせよう。', '#27ae60');
+            setFeedback('大正解！次は左右の原子モデルの数を数えて合わせよう。', '#27ae60');
             document.getElementById('main-action-btn').innerText = "Step2へ進む";
             currentPhase = 1.5; 
             
@@ -432,21 +415,19 @@
                 });
             });
         } else {
-            setFeedback('間違っている化学式があります。大文字・小文字にも注意！(数字は大きくても大丈夫)', '#e74c3c');
+            setFeedback('間違っている化学式があります。大文字・小文字にも注意！(数字を大きくてもOK)', '#e74c3c');
         }
     }
 
     // --- Phase 2: 数合わせ ---
     function renderPhase2() {
         currentPhase = 2;
-        document.getElementById('step-title').innerText = "Step2: ＋と－ボタンで、左右の原子の数を合わせよう！";
+        document.getElementById('step-title').innerText = "Step2: ＋と－ボタンで、矢印の左と右で原子の数を同じにしよう！";
         document.getElementById('equation-area').style.alignItems = 'center';
-        document.getElementById('table-area').classList.remove('hidden');
         document.getElementById('main-action-btn').innerText = "この数で確定する";
         setFeedback('', '');
         
         drawMolecules();
-        updateTable();
     }
 
     function drawMolecules() {
@@ -483,7 +464,10 @@
                     }
                 }
             }
-            modelsHTML += `<div style="display:flex; flex-wrap:wrap; margin:2px; padding:2px; border: 1px dotted #ccc; border-radius: 4px; justify-content:center;">${atomsHTML}</div>`;
+            // パッケージの枠だけを残し、数字を削除
+            modelsHTML += `<div class="molecule-package">
+                            ${atomsHTML}
+                           </div>`;
         }
 
         return `
@@ -505,45 +489,8 @@
         if (p[side][index].coeff + delta >= 1) {
             p[side][index].coeff += delta;
             drawMolecules();
-            updateTable();
             setFeedback('', '');
         }
-    }
-
-    function updateTable() {
-        const p = problems[currentProblemIndex];
-        let leftAtoms = {}, rightAtoms = {}, allTypes = new Set();
-
-        p.reactants.forEach(r => {
-            for (const [atom, count] of Object.entries(r.atoms)) {
-                leftAtoms[atom] = (leftAtoms[atom] || 0) + (count * r.coeff);
-                allTypes.add(atom);
-            }
-        });
-        p.products.forEach(pr => {
-            for (const [atom, count] of Object.entries(pr.atoms)) {
-                rightAtoms[atom] = (rightAtoms[atom] || 0) + (count * pr.coeff);
-                allTypes.add(atom);
-            }
-        });
-
-        let tbodyHTML = '';
-        allTypes.forEach(atom => {
-            const leftCount = leftAtoms[atom] || 0;
-            const rightCount = rightAtoms[atom] || 0;
-            tbodyHTML += `
-                <tr>
-                    <td>
-                        <div class="atom-cell">
-                            <div class="atom atom-${atom}" style="margin:0;">${atom}</div>
-                        </div>
-                    </td>
-                    <td>${leftCount}</td>
-                    <td>${rightCount}</td>
-                </tr>
-            `;
-        });
-        document.getElementById('atom-table-body').innerHTML = tbodyHTML;
     }
 
     function checkPhase2() {
@@ -571,11 +518,11 @@
         });
 
         if (isPerfect) {
-            setFeedback('数の調整バッチリ！最後に式を完成させよう。', '#27ae60');
+            setFeedback('数の調整バッチリ！最後に化学反応式を書き上げよう。', '#27ae60');
             document.getElementById('main-action-btn').innerText = "Step3へ進む";
             currentPhase = 2.5; 
         } else {
-            setFeedback('まだ左右の数が合っていないよ！分子モデルをよく見比べてみよう。', '#e74c3c');
+            setFeedback('まだ左右の数が合っていないよ！原子モデルの数をもう一度よく数えてみよう。', '#e74c3c');
         }
     }
 
@@ -584,11 +531,9 @@
         currentPhase = 3;
         document.getElementById('step-title').innerText = "Step3: 係数を入れて化学反応式を完成させよう！\n（※係数が1のときは空欄にしよう）";
         document.getElementById('equation-area').classList.add('hidden');
-        document.getElementById('table-area').classList.add('hidden');
         document.getElementById('step3-area').classList.remove('hidden');
         
         const p = problems[currentProblemIndex];
-        // Flexboxのグループ化で、矢印でのみ折り返されるように修正
         let html = '<div class="final-eq-group reactants-group">';
         
         p.reactants.forEach((r, idx) => {
@@ -636,7 +581,7 @@
         });
 
         if (allCorrect) {
-            setFeedback('パーフェクト！完璧な化学反応式の完成です！🎉', '#e67e22');
+            setFeedback('パーフェクト！完璧な化学反応式の完成！！🎉', '#e67e22');
             document.getElementById('main-action-btn').style.display = 'none';
             
             clearedProblems.add(p.id);
@@ -645,7 +590,7 @@
             if (hintOne) {
                 setFeedback('惜しい！係数が「1」のときは、数字を書かずに空欄にするルールだよ。', '#e74c3c');
             } else {
-                setFeedback('間違っている係数があります。空欄(1)かどうかも確認しよう！', '#e74c3c');
+                setFeedback('間違っている係数があります。空欄(1のとき)かどうかも確認しよう！', '#e74c3c');
             }
         }
     }
@@ -653,15 +598,15 @@
     // --- メインボタンの制御 ---
     function handleMainAction() {
         if (currentPhase === 1) {
-            checkPhase1();       // 化学式判定
+            checkPhase1();
         } else if (currentPhase === 1.5) {
-            renderPhase2();      // Step2の画面を描画
+            renderPhase2();
         } else if (currentPhase === 2) {
-            checkPhase2();       // 原子数判定
+            checkPhase2();
         } else if (currentPhase === 2.5) {
-            renderPhase3();      // Step3の画面を描画
+            renderPhase3();
         } else if (currentPhase === 3) {
-            checkPhase3();       // 最終式判定
+            checkPhase3();
         }
     }
 
