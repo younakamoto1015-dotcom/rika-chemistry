@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>化学反応式マスター</title>
+    <style>
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { font-size: 24px; color: #2c3e50; margin-bottom: 15px; text-align: center; }
+        
+        /* 全体レイアウト（サイドバー + メイン） */
+        .app-container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        /* サイドバー（目次） */
+        .sidebar {
+            width: 260px;
+            background: #fff;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        .sidebar h3 { margin-top: 0; color: #2980b9; text-align: center; }
+        .problem-list { list-style: none; padding: 0; margin: 0; }
+        .problem-list-item {
+            padding: 12px 10px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .problem-list-item:hover { background: #eef2f5; }
+        .problem-list-item.active { background: #3498db; color: white; border-color: #2980b9; }
+        .problem-list-item.cleared { background: #2ecc71; color: white; border-color: #27ae60; }
+        .problem-list-item.cleared.active { background: #27ae60; }
+
+        /* メインコンテンツ */
+        .main-content {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 850px) {
+            .app-container { flex-direction: column; }
+            .sidebar { width: auto; }
+        }
+
+        .step-title {
+            font-size: 18px; color: #2980b9; font-weight: bold; margin-bottom: 20px;
+            background: #eaf2f8; padding: 10px; border-radius: 8px; display: inline-block;
+        }
+        .problem-text {
+            font-size: 18px; font-weight: bold; margin-bottom: 20px; padding: 15px;
+            background: #eef2f5; border-radius: 8px; text-align: left;
+        }
+        
+        /* 式表示エリア（折り返し対応） */
+        .equation-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .eq-group {
+            display: flex;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .arrow { font-size: 30px; font-weight: bold; color: #e74c3c; margin: 0 5px; padding-bottom: 30px;}
+
+        /* Step1: 入力フェーズ用スタイル */
+        .word-item { display: flex; flex-direction: column; align-items: center; }
+        .speech-bubble {
+            position: relative; background: #fff; border: 3px solid #3498db;
+            border-radius: 8px; padding: 5px; margin-bottom: 15px;
+        }
+        .speech-bubble::after {
+            content: ''; position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%);
+            border-width: 10px 10px 0; border-style: solid; border-color: #3498db transparent transparent transparent;
+        }
+        .formula-input {
+            font-size: 20px; padding: 5px; width: 80px; text-align: center; border: none; outline: none;
+            font-weight: bold; touch-action: manipulation;
+        }
+        .speech-bubble.correct { border-color: #27ae60; background-color: #eafaf1; }
+        .speech-bubble.correct::after { border-top-color: #27ae60; }
+        .speech-bubble.incorrect { border-color: #e74c3c; background-color: #fdedec; }
+        .speech-bubble.incorrect::after { border-top-color: #e74c3c; }
+
+        .material-name { font-size: 16px; color: #34495e; font-weight: bold; padding-bottom: 5px; }
+        .operator-text { font-size: 24px; font-weight: bold; padding-bottom: 5px; margin: 0 5px; }
+
+        /* Step2: 数合わせフェーズ用スタイル */
+        .molecule-block {
+            display: flex; flex-direction: column; align-items: center;
+            background: #fafafa; padding: 10px; border: 2px solid #ddd; border-radius: 8px;
+            margin: 5px;
+        }
+        .coeff-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .action-btn {
+            width: 44px; height: 44px; font-size: 24px; font-weight: bold; color: white;
+            background-color: #3498db; border: none; border-radius: 8px;
+            cursor: pointer; touch-action: manipulation; display: flex; align-items: center; justify-content: center;
+        }
+        .action-btn:active { background-color: #2980b9; }
+        .action-btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        
+        .main-btn {
+            background-color: #f39c12; padding: 12px 24px; font-size: 18px; color: white; font-weight: bold;
+            border: none; border-radius: 8px; cursor: pointer; margin-top: 10px;
+        }
+        .main-btn:active { background-color: #e67e22; }
+
+        .coeff-display { font-size: 24px; font-weight: bold; width: 30px; text-align: center; }
+        .formula { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+        .models { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; max-width: none; }
+        
+        .atom {
+            width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: bold; font-family: Arial, sans-serif;
+            border: 1px solid rgba(0,0,0,0.3); box-shadow: inset -2px -2px 4px rgba(0,0,0,0.2); margin: 1px;
+        }
+        .atom-Fe { background: #95a5a6; color: #fff; }
+        .atom-S { background: #f1c40f; color: #333; }
+        .atom-Cu { background: #d35400; color: #fff; }
+        .atom-O { background: #e74c3c; color: #fff; }
+        .atom-Mg { background: #ecf0f1; color: #333; border: 2px solid #bdc3c7; }
+        .atom-C { background: #34495e; color: #fff; }
+        .atom-H { background: #fff; color: #333; border: 2px solid #ccc; }
+        .atom-Ca { background: #9b59b6; color: #fff; }
+        .atom-Cl { background: #2ecc71; color: #fff; }
+        .atom-N { background: #3498db; color: #fff; }
+        .atom-Ba { background: #1abc9c; color: #fff; }
+        .atom-Na { background: #f39c12; color: #fff; } /* Na追加 */
+
+        /* 表スタイル */
+        table { width: 100%; max-width: 400px; margin: 0 auto; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 18px; }
+        th { background: #f8f9fa; }
+        .atom-cell { display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
+        /* Step3: 最終式入力フェーズ用スタイル */
+        .final-eq-container {
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+            margin: 20px 0; background: #fffbe6; padding: 20px;
+            border-radius: 8px; border: 2px dashed #f1c40f; gap: 10px;
+        }
+        .final-eq-group {
+            display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 5px;
+        }
+        .final-coeff-input {
+            width: 40px; height: 40px; font-size: 24px; text-align: center;
+            border: 2px solid #bdc3c7; border-radius: 6px; font-weight: bold; touch-action: manipulation;
+        }
+        .final-coeff-input:focus { border-color: #3498db; outline: none; }
+        .final-formula { font-size: 26px; font-weight: bold; font-family: 'Times New Roman', serif; }
+
+        .feedback-msg { font-size: 18px; font-weight: bold; margin: 15px 0; min-height: 27px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<h1>化学反応式をつくろう</h1>
+<div class="app-container">
+    
+    <div class="sidebar">
+        <h3>問題一覧</h3>
+        <ul id="problem-list" class="problem-list">
+            </ul>
+    </div>
+
+    <div class="main-content">
+        <div id="problem-text" class="problem-text">問題文がここに入ります</div>
+        
+        <div id="step-title" class="step-title">Step1: まずは、それぞれの物質を化学式で書いてみよう！</div>
+
+        <div id="equation-area" class="equation-area"></div>
+
+        <div id="step3-area" class="hidden">
+            <div id="final-eq-container" class="final-eq-container"></div>
+        </div>
+
+        <div id="controls-area">
+            <button id="main-action-btn" class="main-btn" onclick="handleMainAction()">化学式を判定する</button>
+            <div id="feedback-msg" class="feedback-msg"></div>
+        </div>
+
+        <div id="table-area" class="hidden">
+            <table id="atom-table">
+                <thead>
+                    <tr>
+                        <th>原子</th>
+                        <th>反応前 (左)</th>
+                        <th>反応後 (右)</th>
+                    </tr>
+                </thead>
+                <tbody id="atom-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const problems = [
+        {
+            id: 1, title: "① 水の電気分解", text: "① 水を電気分解すると、水素と酸素が発生した。",
+            reactants: [{ name: "水", formula: "H2O", html: "H<sub>2</sub>O", atoms: { H: 2, O: 1 }, visualOrder: ['H', 'O', 'H'], coeff: 1 }],
+            products: [
+                { name: "水素", formula: "H2", html: "H<sub>2</sub>", atoms: { H: 2 }, visualOrder: ['H', 'H'], coeff: 1 },
+                { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder: ['O', 'O'], coeff: 1 }
+            ]
+        },
+        {
+            id: 2, title: "② 炭酸水素ナトリウム", text: "② 炭酸水素ナトリウムを加熱すると、炭酸ナトリウムと水と二酸化炭素に分解した。",
+            reactants: [{ name: "炭酸水素ナトリウム", formula: "NaHCO3", html: "NaHCO<sub>3</sub>", atoms: { Na: 1, H: 1, C: 1, O: 3 }, coeff: 1 }],
+            products: [
+                { name: "炭酸ナトリウム", formula: "Na2CO3", html: "Na<sub>2</sub>CO<sub>3</sub>", atoms: { Na: 2, C: 1, O: 3 }, coeff: 1 },
+                { name: "水", formula: "H2O", html: "H<sub>2</sub>O", atoms: { H: 2, O: 1 }, visualOrder: ['H', 'O', 'H'], coeff: 1 },
+                { name: "二酸化炭素", formula: "CO2", html: "CO<sub>2</sub>", atoms: { C: 1, O: 2 }, visualOrder: ['O', 'C', 'O'], coeff: 1 }
+            ]
+        },
+        {
+            id: 3, title: "③ 鉄と硫黄", text: "③ 鉄の粉末と粉末の硫黄を加熱すると、硫化鉄が生成した。",
+            reactants: [{ name: "鉄", formula: "Fe", html: "Fe", atoms: { Fe: 1 }, coeff: 1 }, { name: "硫黄", formula: "S", html: "S", atoms: { S: 1 }, coeff: 1 }],
+            products: [{ name: "硫化鉄", formula: "FeS", html: "FeS", atoms: { Fe: 1, S: 1 }, visualOrder: ['Fe', 'S'], coeff: 1 }]
+        },
+        {
+            id: 4, title: "④ 銅と硫黄", text: "④ 銅の粉末と粉末の硫黄を加熱すると、硫化銅が生成した。",
+            reactants: [{ name: "銅", formula: "Cu", html: "Cu", atoms: { Cu: 1 }, coeff: 1 }, { name: "硫黄", formula: "S", html: "S", atoms: { S: 1 }, coeff: 1 }],
+            products: [{ name: "硫化銅", formula: "CuS", html: "CuS", atoms: { Cu: 1, S: 1 }, visualOrder: ['Cu', 'S'], coeff: 1 }]
+        },
+        {
+            id: 5, title: "⑤ 銅の酸化", text: "⑤ うずまき銅線を空気中で加熱すると、酸化銅が生成した。",
+            reactants: [{ name: "銅", formula: "Cu", html: "Cu", atoms: { Cu: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder: ['O', 'O'], coeff: 1 }],
+            products: [{ name: "酸化銅", formula: "CuO", html: "CuO", atoms: { Cu: 1, O: 1 }, visualOrder: ['Cu', 'O'], coeff: 1 }]
+        },
+        {
+            id: 6, title: "⑥ Mgの酸化", text: "⑥ マグネシウムを空気中で加熱すると、酸化マグネシウムが生成した。",
+            reactants: [{ name: "マグネシウム", formula: "Mg", html: "Mg", atoms: { Mg: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder: ['O','O'], coeff: 1 }],
+            products: [{ name: "酸化マグネシウム", formula: "MgO", html: "MgO", atoms: { Mg: 1, O: 1 }, visualOrder: ['Mg','O'], coeff: 1 }]
+        },
+        {
+            id: 7, title: "⑦ 鉄の酸化(さび)", text: "⑦ 鉄のくぎを空気中で加熱すると、さび(酸化鉄: Fe2O3) が生成した。",
+            reactants: [{ name: "鉄", formula: "Fe", html: "Fe", atoms: { Fe: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder: ['O','O'], coeff: 1 }],
+            products: [{ name: "酸化鉄", formula: "Fe2O3", html: "Fe<sub>2</sub>O<sub>3</sub>", atoms: { Fe: 2, O: 3 }, visualOrder: ['O','Fe','O','Fe','O'], coeff: 1 }]
+        },
+        {
+            id: 8, title: "⑧ 炭素の燃焼", text: "⑧ 木炭を空気中で加熱すると、二酸化炭素が生成した。",
+            reactants: [{ name: "炭素", formula: "C", html: "C", atoms: { C: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder:['O','O'], coeff: 1 }],
+            products: [{ name: "二酸化炭素", formula: "CO2", html: "CO<sub>2</sub>", atoms: { C: 1, O: 2 }, visualOrder: ['O', 'C', 'O'], coeff: 1 }]
+        },
+        {
+            id: 9, title: "⑨ 水素の燃焼", text: "⑨ 水素と酸素の混合気体に点火すると、青色の塩化コバルト紙が赤色になった。",
+            reactants: [{ name: "水素", formula: "H2", html: "H<sub>2</sub>", atoms: { H: 2 }, visualOrder:['H','H'], coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder:['O','O'], coeff: 1 }],
+            products: [{ name: "水", formula: "H2O", html: "H<sub>2</sub>O", atoms: { H: 2, O: 1 }, visualOrder: ['H', 'O', 'H'], coeff: 1 }]
+        },
+        {
+            id: 10, title: "⑩ 炭酸カルシウム", text: "⑩ 炭酸カルシウム(CaCO3) と塩化水素の水溶液(塩酸)を反応させると、塩化カルシウム(CaCl2) と水と二酸化炭素が発生した。",
+            reactants: [{ name: "炭酸カルシウム", formula: "CaCO3", html: "CaCO<sub>3</sub>", atoms: { Ca: 1, C: 1, O: 3 }, coeff: 1 }, { name: "塩化水素", formula: "HCl", html: "HCl", atoms: { H: 1, Cl: 1 }, visualOrder: ['H','Cl'], coeff: 1 }],
+            products: [{ name: "塩化カルシウム", formula: "CaCl2", html: "CaCl<sub>2</sub>", atoms: { Ca: 1, Cl: 2 }, visualOrder: ['Cl','Ca','Cl'], coeff: 1 }, { name: "水", formula: "H2O", html: "H<sub>2</sub>O", atoms: { H: 2, O: 1 }, visualOrder: ['H', 'O', 'H'], coeff: 1 }, { name: "二酸化炭素", formula: "CO2", html: "CO<sub>2</sub>", atoms: { C: 1, O: 2 }, visualOrder: ['O', 'C', 'O'], coeff: 1 }]
+        },
+        {
+            id: 11, title: "⑪ 酸化銅と水素", text: "⑪ 酸化銅を気体の水素中に入れると、水が発生し、酸化銅は銅に変化した。",
+            reactants: [{ name: "酸化銅", formula: "CuO", html: "CuO", atoms: { Cu: 1, O: 1 }, visualOrder: ['Cu','O'], coeff: 1 }, { name: "水素", formula: "H2", html: "H<sub>2</sub>", atoms: { H: 2 }, visualOrder: ['H','H'], coeff: 1 }],
+            products: [{ name: "銅", formula: "Cu", html: "Cu", atoms: { Cu: 1 }, coeff: 1 }, { name: "水", formula: "H2O", html: "H<sub>2</sub>O", atoms: { H: 2, O: 1 }, visualOrder: ['H', 'O', 'H'], coeff: 1 }]
+        },
+        {
+            id: 12, title: "⑫ エタノールの燃焼", text: "⑫ エタノール (C2H6O) を酸素と反応 (燃焼)させると、水と二酸化炭素が発生した。",
+            reactants: [{ name: "エタノール", formula: "C2H6O", html: "C<sub>2</sub>H<sub>6</sub>O", atoms: { C: 2, H: 6, O: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder:['O','O'], coeff: 1 }],
+            products: [{ name: "水", formula: "H2O", html: "H<sub>2</sub>O", atoms: { H: 2, O: 1 }, visualOrder: ['H', 'O', 'H'], coeff: 1 }, { name: "二酸化炭素", formula: "CO2", html: "CO<sub>2</sub>", atoms: { C: 1, O: 2 }, visualOrder: ['O', 'C', 'O'], coeff: 1 }]
+        },
+        {
+            id: 13, title: "⑬ アンモニア発生", text: "⑬ 塩化アンモニウム (NH4Cl) と水酸化バリウム (Ba(OH)2) を混ぜると、塩化バリウム(BaCl2) と水ができ、アンモニアが発生する。",
+            reactants: [{ name: "塩化アンモニウム", formula: "NH4Cl", html: "NH<sub>4</sub>Cl", atoms: { N: 1, H: 4, Cl: 1 }, coeff: 1 }, { name: "水酸化バリウム", formula: "Ba(OH)2", html: "Ba(OH)<sub>2</sub>", atoms: { Ba: 1, O: 2, H: 2 }, coeff: 1 }],
+            products: [{ name: "塩化バリウム", formula: "BaCl2", html: "BaCl<sub>2</sub>", atoms: { Ba: 1, Cl: 2 }, visualOrder:['Cl','Ba','Cl'], coeff: 1 }, { name: "水", formula: "H2O", html: "H<sub>2</sub>O", atoms: { H: 2, O: 1 }, visualOrder: ['H', 'O', 'H'], coeff: 1 }, { name: "アンモニア", formula: "NH3", html: "NH<sub>3</sub>", atoms: { N: 1, H: 3 }, visualOrder:['H','N','H','H'], coeff: 1 }]
+        }
+    ];
+
+    let currentProblemIndex = 0;
+    let currentPhase = 1; 
+    let clearedProblems = new Set();
+
+    function initApp() {
+        renderSidebar();
+        initProblem(0);
+    }
+
+    function renderSidebar() {
+        const listEl = document.getElementById('problem-list');
+        let html = '';
+        problems.forEach((p, index) => {
+            let classes = ['problem-list-item'];
+            if (index === currentProblemIndex) classes.push('active');
+            if (clearedProblems.has(p.id)) classes.push('cleared');
+            
+            html += `<li class="${classes.join(' ')}" onclick="jumpToProblem(${index})">${p.title}</li>`;
+        });
+        listEl.innerHTML = html;
+    }
+
+    function jumpToProblem(index) {
+        initProblem(index);
+    }
+
+    function initProblem(index) {
+        currentProblemIndex = index;
+        renderSidebar();
+
+        const p = problems[currentProblemIndex];
+        // 問題文中の化学式（下付き文字）を置換
+        let formattedText = p.text.replace(/Fe2O3/g, 'Fe<sub>2</sub>O<sub>3</sub>')
+                                  .replace(/CaCO3/g, 'CaCO<sub>3</sub>')
+                                  .replace(/NaHCO3/g, 'NaHCO<sub>3</sub>')
+                                  .replace(/Na2CO3/g, 'Na<sub>2</sub>CO<sub>3</sub>');
+        document.getElementById('problem-text').innerHTML = formattedText;
+        
+        // 係数リセット
+        p.reactants.forEach(r => r.coeff = 1);
+        p.products.forEach(p => p.coeff = 1);
+        
+        document.getElementById('table-area').classList.add('hidden');
+        document.getElementById('step3-area').classList.add('hidden');
+        document.getElementById('equation-area').classList.remove('hidden');
+        
+        // メインボタンを確実に表示する
+        const mainBtn = document.getElementById('main-action-btn');
+        mainBtn.style.display = 'inline-block';
+        
+        setFeedback('', '');
+        renderPhase1();
+    }
+
+    function toHalfWidth(str) {
+        return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
+            return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+        }).replace(/\s+/g, '');
+    }
+
+    function setFeedback(msg, color) {
+        const el = document.getElementById('feedback-msg');
+        el.innerText = msg;
+        el.style.color = color;
+    }
+
+    // --- Phase 1: 化学式入力 ---
+    function renderPhase1() {
+        currentPhase = 1;
+        document.getElementById('step-title').innerText = "Step1: まずは、それぞれの物質を化学式で書いてみよう！";
+        document.getElementById('main-action-btn').innerText = "化学式を判定する";
+        document.getElementById('equation-area').style.alignItems = 'flex-end';
+        
+        let html = '<div class="eq-group reactants-group">';
+        problems[currentProblemIndex].reactants.forEach((r, idx) => {
+            html += `<div class="word-item">
+                        <div id="bubble-reactants-${idx}" class="speech-bubble">
+                            <input type="text" id="input-reactants-${idx}" class="formula-input" placeholder="化学式" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </div>
+                        <div class="material-name">${r.name}</div>
+                     </div>`;
+            if(idx < problems[currentProblemIndex].reactants.length - 1) html += `<div class="operator-text">+</div>`;
+        });
+        html += '</div>';
+
+        html += '<div class="eq-group products-group"><div class="operator-text arrow">→</div>';
+        problems[currentProblemIndex].products.forEach((pr, idx) => {
+            html += `<div class="word-item">
+                        <div id="bubble-products-${idx}" class="speech-bubble">
+                            <input type="text" id="input-products-${idx}" class="formula-input" placeholder="化学式" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </div>
+                        <div class="material-name">${pr.name}</div>
+                     </div>`;
+            if(idx < problems[currentProblemIndex].products.length - 1) html += `<div class="operator-text">+</div>`;
+        });
+        html += '</div>';
+
+        document.getElementById('equation-area').innerHTML = html;
+    }
+
+    function checkPhase1() {
+        const p = problems[currentProblemIndex];
+        let allCorrect = true;
+
+        ['reactants', 'products'].forEach(side => {
+            p[side].forEach((item, idx) => {
+                const inputEl = document.getElementById(`input-${side}-${idx}`);
+                const bubbleEl = document.getElementById(`bubble-${side}-${idx}`);
+                const formattedVal = toHalfWidth(inputEl.value);
+                
+                if (formattedVal === item.formula) {
+                    bubbleEl.className = "speech-bubble correct";
+                } else {
+                    bubbleEl.className = "speech-bubble incorrect";
+                    allCorrect = false;
+                }
+            });
+        });
+
+        if (allCorrect) {
+            setFeedback('大正解！次は左右の原子の数を合わせよう。', '#27ae60');
+            document.getElementById('main-action-btn').innerText = "Step2へ進む";
+            currentPhase = 1.5; 
+            
+            ['reactants', 'products'].forEach(side => {
+                p[side].forEach((item, idx) => {
+                    document.getElementById(`input-${side}-${idx}`).readOnly = true;
+                });
+            });
+        } else {
+            setFeedback('間違っている化学式があります。大文字・小文字にも注意！(数字は大きくても大丈夫)', '#e74c3c');
+        }
+    }
+
+    // --- Phase 2: 数合わせ ---
+    function renderPhase2() {
+        currentPhase = 2;
+        document.getElementById('step-title').innerText = "Step2: ＋と－ボタンで、左右の原子の数を合わせよう！";
+        document.getElementById('equation-area').style.alignItems = 'center';
+        document.getElementById('table-area').classList.remove('hidden');
+        document.getElementById('main-action-btn').innerText = "この数で確定する";
+        setFeedback('', '');
+        
+        drawMolecules();
+        updateTable();
+    }
+
+    function drawMolecules() {
+        const p = problems[currentProblemIndex];
+        let html = '<div class="eq-group reactants-group">';
+        p.reactants.forEach((r, idx) => {
+            html += createMoleculeHTML(r, 'reactants', idx);
+            if(idx < p.reactants.length - 1) html += `<div class="operator-text">+</div>`;
+        });
+        html += '</div>';
+        
+        html += '<div class="eq-group products-group"><div class="arrow">→</div>';
+        p.products.forEach((pr, idx) => {
+            html += createMoleculeHTML(pr, 'products', idx);
+            if(idx < p.products.length - 1) html += `<div class="operator-text">+</div>`;
+        });
+        html += '</div>';
+
+        document.getElementById('equation-area').innerHTML = html;
+    }
+
+    function createMoleculeHTML(item, side, index) {
+        let modelsHTML = '';
+        for(let i=0; i<item.coeff; i++) {
+            let atomsHTML = '';
+            if (item.visualOrder) {
+                item.visualOrder.forEach(atom => {
+                    atomsHTML += `<div class="atom atom-${atom}">${atom}</div>`;
+                });
+            } else {
+                for (const [atom, count] of Object.entries(item.atoms)) {
+                    for(let j=0; j<count; j++) {
+                        atomsHTML += `<div class="atom atom-${atom}">${atom}</div>`;
+                    }
+                }
+            }
+            modelsHTML += `<div style="display:flex; flex-wrap:wrap; margin:2px; padding:2px; border: 1px dotted #ccc; border-radius: 4px; justify-content:center;">${atomsHTML}</div>`;
+        }
+
+        return `
+            <div class="molecule-block">
+                <div class="coeff-controls">
+                    <button class="action-btn" onclick="changeCoeff('${side}', ${index}, 1)">+</button>
+                    <div class="coeff-display">${item.coeff}</div>
+                    <button class="action-btn" onclick="changeCoeff('${side}', ${index}, -1)" ${item.coeff <= 1 ? 'disabled' : ''}>-</button>
+                </div>
+                <div class="formula">${item.html}</div>
+                <div class="models">${modelsHTML}</div>
+            </div>
+        `;
+    }
+
+    function changeCoeff(side, index, delta) {
+        if(currentPhase !== 2) return;
+        const p = problems[currentProblemIndex];
+        if (p[side][index].coeff + delta >= 1) {
+            p[side][index].coeff += delta;
+            drawMolecules();
+            updateTable();
+            setFeedback('', '');
+        }
+    }
+
+    function updateTable() {
+        const p = problems[currentProblemIndex];
+        let leftAtoms = {}, rightAtoms = {}, allTypes = new Set();
+
+        p.reactants.forEach(r => {
+            for (const [atom, count] of Object.entries(r.atoms)) {
+                leftAtoms[atom] = (leftAtoms[atom] || 0) + (count * r.coeff);
+                allTypes.add(atom);
+            }
+        });
+        p.products.forEach(pr => {
+            for (const [atom, count] of Object.entries(pr.atoms)) {
+                rightAtoms[atom] = (rightAtoms[atom] || 0) + (count * pr.coeff);
+                allTypes.add(atom);
+            }
+        });
+
+        let tbodyHTML = '';
+        allTypes.forEach(atom => {
+            const leftCount = leftAtoms[atom] || 0;
+            const rightCount = rightAtoms[atom] || 0;
+            tbodyHTML += `
+                <tr>
+                    <td>
+                        <div class="atom-cell">
+                            <div class="atom atom-${atom}" style="margin:0;">${atom}</div>
+                        </div>
+                    </td>
+                    <td>${leftCount}</td>
+                    <td>${rightCount}</td>
+                </tr>
+            `;
+        });
+        document.getElementById('atom-table-body').innerHTML = tbodyHTML;
+    }
+
+    function checkPhase2() {
+        const p = problems[currentProblemIndex];
+        let leftAtoms = {}, rightAtoms = {}, allTypes = new Set();
+
+        p.reactants.forEach(r => {
+            for (const [atom, count] of Object.entries(r.atoms)) {
+                leftAtoms[atom] = (leftAtoms[atom] || 0) + (count * r.coeff);
+                allTypes.add(atom);
+            }
+        });
+        p.products.forEach(pr => {
+            for (const [atom, count] of Object.entries(pr.atoms)) {
+                rightAtoms[atom] = (rightAtoms[atom] || 0) + (count * pr.coeff);
+                allTypes.add(atom);
+            }
+        });
+
+        let isPerfect = true;
+        allTypes.forEach(atom => {
+            if ((leftAtoms[atom] || 0) !== (rightAtoms[atom] || 0)) {
+                isPerfect = false;
+            }
+        });
+
+        if (isPerfect) {
+            setFeedback('数の調整バッチリ！最後に式を完成させよう。', '#27ae60');
+            document.getElementById('main-action-btn').innerText = "Step3へ進む";
+            currentPhase = 2.5; 
+        } else {
+            setFeedback('まだ左右の数が合っていないよ！分子モデルをよく見比べてみよう。', '#e74c3c');
+        }
+    }
+
+    // --- Phase 3: 最終式入力 ---
+    function renderPhase3() {
+        currentPhase = 3;
+        document.getElementById('step-title').innerText = "Step3: 係数を入れて化学反応式を完成させよう！\n（※係数が1のときは空欄にしよう）";
+        document.getElementById('equation-area').classList.add('hidden');
+        document.getElementById('table-area').classList.add('hidden');
+        document.getElementById('step3-area').classList.remove('hidden');
+        
+        const p = problems[currentProblemIndex];
+        // Flexboxのグループ化で、矢印でのみ折り返されるように修正
+        let html = '<div class="final-eq-group reactants-group">';
+        
+        p.reactants.forEach((r, idx) => {
+            html += `<input type="text" id="final-reactants-${idx}" class="final-coeff-input" autocapitalize="off" autocorrect="off">
+                     <span class="final-formula">${r.html}</span>`;
+            if(idx < p.reactants.length - 1) html += `<span class="operator-text">+</span>`;
+        });
+        html += '</div>';
+
+        html += '<div class="final-eq-group products-group"><span class="operator-text arrow">→</span>';
+        p.products.forEach((pr, idx) => {
+            html += `<input type="text" id="final-products-${idx}" class="final-coeff-input" autocapitalize="off" autocorrect="off">
+                     <span class="final-formula">${pr.html}</span>`;
+            if(idx < p.products.length - 1) html += `<span class="operator-text">+</span>`;
+        });
+        html += '</div>';
+
+        document.getElementById('final-eq-container').innerHTML = html;
+        
+        setFeedback('', '');
+        document.getElementById('main-action-btn').innerText = "完成した式を確認する";
+    }
+
+    function checkPhase3() {
+        const p = problems[currentProblemIndex];
+        let allCorrect = true;
+        let hintOne = false;
+
+        ['reactants', 'products'].forEach(side => {
+            p[side].forEach((item, idx) => {
+                const inputEl = document.getElementById(`final-${side}-${idx}`);
+                const val = toHalfWidth(inputEl.value);
+                const expected = item.coeff === 1 ? "" : item.coeff.toString();
+                
+                if (val === expected) {
+                    inputEl.style.borderColor = "#27ae60";
+                    inputEl.style.backgroundColor = "#eafaf1";
+                } else {
+                    inputEl.style.borderColor = "#e74c3c";
+                    inputEl.style.backgroundColor = "#fdedec";
+                    allCorrect = false;
+                    if (item.coeff === 1 && val === "1") hintOne = true;
+                }
+            });
+        });
+
+        if (allCorrect) {
+            setFeedback('パーフェクト！完璧な化学反応式の完成です！🎉', '#e67e22');
+            document.getElementById('main-action-btn').style.display = 'none';
+            
+            clearedProblems.add(p.id);
+            renderSidebar();
+        } else {
+            if (hintOne) {
+                setFeedback('惜しい！係数が「1」のときは、数字を書かずに空欄にするルールだよ。', '#e74c3c');
+            } else {
+                setFeedback('間違っている係数があります。空欄(1)かどうかも確認しよう！', '#e74c3c');
+            }
+        }
+    }
+
+    // --- メインボタンの制御 ---
+    function handleMainAction() {
+        if (currentPhase === 1) {
+            checkPhase1();       // 化学式判定
+        } else if (currentPhase === 1.5) {
+            renderPhase2();      // Step2の画面を描画
+        } else if (currentPhase === 2) {
+            checkPhase2();       // 原子数判定
+        } else if (currentPhase === 2.5) {
+            renderPhase3();      // Step3の画面を描画
+        } else if (currentPhase === 3) {
+            checkPhase3();       // 最終式判定
+        }
+    }
+
+    initApp();
+</script>
+
+</body>
+</html>
