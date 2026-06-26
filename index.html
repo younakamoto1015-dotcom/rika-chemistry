@@ -93,7 +93,16 @@
 
         .arrow { font-size: 30px; font-weight: bold; color: #e74c3c; margin: 0 5px; padding-bottom: 30px;}
 
-        /* Step1: 入力フェーズ用スタイル */
+        /* Step0: 物質名入力フェーズ用スタイル */
+        .name-input {
+            font-size: 16px; padding: 8px; width: 120px; text-align: center; border: 2px solid #bdc3c7; border-radius: 6px;
+            font-weight: bold; margin-bottom: 5px; outline: none; transition: 0.2s;
+        }
+        .name-input:focus { border-color: #3498db; }
+        .name-input.correct { border-color: #27ae60; background-color: #eafaf1; }
+        .name-input.incorrect { border-color: #e74c3c; background-color: #fdedec; }
+
+        /* Step1: 化学式入力フェーズ用スタイル */
         .word-item { display: flex; flex-direction: column; align-items: center; }
         .speech-bubble {
             position: relative; background: #fff; border: 3px solid #3498db;
@@ -198,7 +207,7 @@
     <div class="main-content">
         <div id="problem-text" class="problem-text">問題文がここに入ります</div>
         
-        <div id="step-title" class="step-title">Step1: まずは、それぞれの物質を化学式で書いてみよう！</div>
+        <div id="step-title" class="step-title"></div>
 
         <div id="equation-area" class="equation-area"></div>
 
@@ -207,7 +216,7 @@
         </div>
 
         <div id="controls-area">
-            <button id="main-action-btn" class="main-btn" onclick="handleMainAction()">化学式を判定する</button>
+            <button id="main-action-btn" class="main-btn" onclick="handleMainAction()">判定する</button>
             <div id="feedback-msg" class="feedback-msg"></div>
         </div>
     </div>
@@ -243,22 +252,22 @@
             products: [{ name: "硫化銅", formula: "CuS", html: "CuS", atoms: { Cu: 1, S: 1 }, visualOrder: ['Cu', 'S'], coeff: 1 }]
         },
         {
-            id: 5, title: "⑤ 銅と酸素（酸化）", text: "⑤ うずまき銅線を空気中で加熱すると、酸化銅が生成した。",
+            id: 5, title: "⑤ 銅と酸素（酸化）", text: "⑤ うずまき銅線を加熱して、空気中の酸素と反応させると、酸化銅が生成した。",
             reactants: [{ name: "銅", formula: "Cu", html: "Cu", atoms: { Cu: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder: ['O', 'O'], coeff: 1 }],
             products: [{ name: "酸化銅", formula: "CuO", html: "CuO", atoms: { Cu: 1, O: 1 }, visualOrder: ['Cu', 'O'], coeff: 1 }]
         },
         {
-            id: 6, title: "⑥ Mgと酸素（酸化）", text: "⑥ マグネシウムを空気中で加熱すると、酸化マグネシウムが生成した。",
+            id: 6, title: "⑥ Mgと酸素（酸化）", text: "⑥ マグネシウムを加熱して、空気中の酸素と反応させると、酸化マグネシウムが生成した。",
             reactants: [{ name: "マグネシウム", formula: "Mg", html: "Mg", atoms: { Mg: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder: ['O','O'], coeff: 1 }],
             products: [{ name: "酸化マグネシウム", formula: "MgO", html: "MgO", atoms: { Mg: 1, O: 1 }, visualOrder: ['Mg','O'], coeff: 1 }]
         },
         {
-            id: 7, title: "⑦ 鉄の酸化(さび)", text: "⑦ 鉄のくぎを空気中で加熱すると、さび(酸化鉄: Fe2O3) が生成した。",
+            id: 7, title: "⑦ 鉄の酸化(さび)", text: "⑦ 鉄のくぎを加熱して、空気中の酸素と反応させると、さび(酸化鉄: Fe2O3) が生成した。",
             reactants: [{ name: "鉄", formula: "Fe", html: "Fe", atoms: { Fe: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder: ['O','O'], coeff: 1 }],
             products: [{ name: "酸化鉄", formula: "Fe2O3", html: "Fe<sub>2</sub>O<sub>3</sub>", atoms: { Fe: 2, O: 3 }, visualOrder: ['O','Fe','O','Fe','O'], coeff: 1 }]
         },
         {
-            id: 8, title: "⑧ 炭素の燃焼", text: "⑧ 木炭を空気中で加熱すると、二酸化炭素が生成した。",
+            id: 8, title: "⑧ 炭素の燃焼", text: "⑧ 木炭を加熱して、空気中の酸素と反応させると、二酸化炭素が生成した。",
             reactants: [{ name: "炭素", formula: "C", html: "C", atoms: { C: 1 }, coeff: 1 }, { name: "酸素", formula: "O2", html: "O<sub>2</sub>", atoms: { O: 2 }, visualOrder:['O','O'], coeff: 1 }],
             products: [{ name: "二酸化炭素", formula: "CO2", html: "CO<sub>2</sub>", atoms: { C: 1, O: 2 }, visualOrder: ['O', 'C', 'O'], coeff: 1 }]
         },
@@ -290,7 +299,7 @@
     ];
 
     let currentProblemIndex = 0;
-    let currentPhase = 1; 
+    let currentPhase = 0; 
     let clearedProblems = new Set();
 
     function initApp() {
@@ -336,7 +345,8 @@
         mainBtn.style.display = 'inline-block';
         
         setFeedback('', '');
-        renderPhase1();
+        
+        renderPhase0();
     }
 
     function toHalfWidth(str) {
@@ -345,16 +355,113 @@
         }).replace(/\s+/g, '');
     }
 
+    // --- 入力された数字を下付き文字に変換する関数 ---
+    function convertToSubscript(str) {
+        const subMap = {
+            '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
+            '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+            '０': '₀', '１': '₁', '２': '₂', '３': '₃', '４': '₄',
+            '５': '₅', '６': '₆', '７': '₇', '８': '₈', '９': '₉'
+        };
+        return str.replace(/[0-9０-９]/g, m => subMap[m] || m);
+    }
+
+    // --- 下付き文字を通常の数字に戻す関数（判定用） ---
+    function revertSubscript(str) {
+        const normalMap = {
+            '₀': '0', '₁': '1', '₂': '2', '₃': '3', '₄': '4',
+            '₅': '5', '₆': '6', '₇': '7', '₈': '8', '₉': '9'
+        };
+        return str.replace(/[₀-₉]/g, m => normalMap[m] || m);
+    }
+
     function setFeedback(msg, color) {
         const el = document.getElementById('feedback-msg');
         el.innerText = msg;
         el.style.color = color;
     }
 
-    // --- Phase 1: 化学式入力 ---
+    // --- Step0: 物質名入力フェーズ ---
+    function renderPhase0() {
+        currentPhase = 0;
+        document.getElementById('step-title').innerText = "Step0: 問題文を読んで、反応前と反応後の「物質名」を日本語で書こう！";
+        document.getElementById('main-action-btn').innerText = "物質名を判定する";
+        document.getElementById('equation-area').style.alignItems = 'center';
+        
+        let html = '<div class="eq-group reactants-group">';
+        problems[currentProblemIndex].reactants.forEach((r, idx) => {
+            html += `<div class="word-item">
+                        <input type="text" id="input-name-reactants-${idx}" class="name-input" placeholder="物質名">
+                     </div>`;
+            if(idx < problems[currentProblemIndex].reactants.length - 1) html += `<div class="operator-text">+</div>`;
+        });
+        html += '</div>';
+
+        html += '<div class="eq-group products-group"><div class="operator-text arrow">→</div>';
+        problems[currentProblemIndex].products.forEach((pr, idx) => {
+            html += `<div class="word-item">
+                        <input type="text" id="input-name-products-${idx}" class="name-input" placeholder="物質名">
+                     </div>`;
+            if(idx < problems[currentProblemIndex].products.length - 1) html += `<div class="operator-text">+</div>`;
+        });
+        html += '</div>';
+
+        document.getElementById('equation-area').innerHTML = html;
+    }
+
+    function checkPhase0() {
+        const p = problems[currentProblemIndex];
+        let allCorrect = true;
+
+        ['reactants', 'products'].forEach(side => {
+            // 正解となる物質名の配列をコピー（重複を避けて順不同判定するため）
+            let expectedNames = p[side].map(item => item.name);
+            
+            p[side].forEach((_, idx) => {
+                const inputEl = document.getElementById(`input-name-${side}-${idx}`);
+                const val = inputEl.value.replace(/\s+/g, ''); // 空白除去
+                
+                // 正解リストに含まれているか探す
+                const matchIndex = expectedNames.indexOf(val);
+                
+                if (matchIndex !== -1) {
+                    inputEl.classList.add("correct");
+                    inputEl.classList.remove("incorrect");
+                    // 一度マッチした名前はリストから削除（同じ正しい名前を2回書くのを防ぐ）
+                    expectedNames.splice(matchIndex, 1);
+                } else {
+                    inputEl.classList.add("incorrect");
+                    inputEl.classList.remove("correct");
+                    allCorrect = false;
+                }
+            });
+            
+            // 入力欄に間違いがなくても、正解リストに残りがあれば不正解とする
+            if (expectedNames.length > 0) {
+                allCorrect = false;
+            }
+        });
+
+        if (allCorrect) {
+            setFeedback('大正解！物質の名前がわかったら、次は化学式にしてみよう。', '#27ae60');
+            document.getElementById('main-action-btn').innerText = "Step1へ進む";
+            currentPhase = 0.5; 
+            
+            ['reactants', 'products'].forEach(side => {
+                p[side].forEach((item, idx) => {
+                    document.getElementById(`input-name-${side}-${idx}`).readOnly = true;
+                });
+            });
+        } else {
+            setFeedback('間違っている物質名があります。問題文をよく読んで正しい日本語を書こう！', '#e74c3c');
+        }
+    }
+
+
+    // --- Step1: 化学式入力フェーズ ---
     function renderPhase1() {
         currentPhase = 1;
-        document.getElementById('step-title').innerText = "Step1: まずは、それぞれの物質を化学式で書いてみよう！";
+        document.getElementById('step-title').innerText = "Step1: それぞれの物質を「化学式」で書いてみよう！";
         document.getElementById('main-action-btn').innerText = "化学式を判定する";
         document.getElementById('equation-area').style.alignItems = 'flex-end';
         
@@ -362,7 +469,7 @@
         problems[currentProblemIndex].reactants.forEach((r, idx) => {
             html += `<div class="word-item">
                         <div id="bubble-reactants-${idx}" class="speech-bubble">
-                            <input type="text" id="input-reactants-${idx}" class="formula-input" placeholder="化学式" autocapitalize="off" autocorrect="off" spellcheck="false">
+                            <input type="text" id="input-reactants-${idx}" class="formula-input" placeholder="化学式" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="this.value = convertToSubscript(this.value)">
                         </div>
                         <div class="material-name">${r.name}</div>
                      </div>`;
@@ -374,7 +481,7 @@
         problems[currentProblemIndex].products.forEach((pr, idx) => {
             html += `<div class="word-item">
                         <div id="bubble-products-${idx}" class="speech-bubble">
-                            <input type="text" id="input-products-${idx}" class="formula-input" placeholder="化学式" autocapitalize="off" autocorrect="off" spellcheck="false">
+                            <input type="text" id="input-products-${idx}" class="formula-input" placeholder="化学式" autocapitalize="off" autocorrect="off" spellcheck="false" oninput="this.value = convertToSubscript(this.value)">
                         </div>
                         <div class="material-name">${pr.name}</div>
                      </div>`;
@@ -393,7 +500,10 @@
             p[side].forEach((item, idx) => {
                 const inputEl = document.getElementById(`input-${side}-${idx}`);
                 const bubbleEl = document.getElementById(`bubble-${side}-${idx}`);
-                const formattedVal = toHalfWidth(inputEl.value);
+                
+                // 下付き文字を通常の数字に戻してから、半角に変換して判定する
+                const revertedVal = revertSubscript(inputEl.value);
+                const formattedVal = toHalfWidth(revertedVal);
                 
                 if (formattedVal === item.formula) {
                     bubbleEl.className = "speech-bubble correct";
@@ -415,11 +525,11 @@
                 });
             });
         } else {
-            setFeedback('間違っている化学式があります。大文字・小文字にも注意！(数字を大きくてもOK)', '#e74c3c');
+            setFeedback('間違っている化学式があります。大文字・小文字にも注意！', '#e74c3c');
         }
     }
 
-    // --- Phase 2: 数合わせ ---
+    // --- Step2: 数合わせフェーズ ---
     function renderPhase2() {
         currentPhase = 2;
         document.getElementById('step-title').innerText = "Step2: ＋と－ボタンで、矢印の左と右で原子の数を同じにしよう！";
@@ -464,7 +574,6 @@
                     }
                 }
             }
-            // パッケージの枠だけを残し、数字を削除
             modelsHTML += `<div class="molecule-package">
                             ${atomsHTML}
                            </div>`;
@@ -526,7 +635,7 @@
         }
     }
 
-    // --- Phase 3: 最終式入力 ---
+    // --- Step3: 最終式入力フェーズ ---
     function renderPhase3() {
         currentPhase = 3;
         document.getElementById('step-title').innerText = "Step3: 係数を入れて化学反応式を完成させよう！\n（※係数が1のときは空欄にしよう）";
@@ -597,7 +706,11 @@
 
     // --- メインボタンの制御 ---
     function handleMainAction() {
-        if (currentPhase === 1) {
+        if (currentPhase === 0) {
+            checkPhase0();
+        } else if (currentPhase === 0.5) {
+            renderPhase1();
+        } else if (currentPhase === 1) {
             checkPhase1();
         } else if (currentPhase === 1.5) {
             renderPhase2();
