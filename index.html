@@ -191,6 +191,34 @@
 
         .feedback-msg { font-size: 18px; font-weight: bold; margin: 15px 0; min-height: 27px; }
         .hidden { display: none !important; }
+
+        /* 全問クリアモーダル */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #fff; padding: 40px 30px; border-radius: 16px; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-width: 400px; width: 90%;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .modal-title { font-size: 28px; color: #27ae60; font-weight: bold; margin-bottom: 15px; }
+        .modal-text { font-size: 18px; color: #555; margin-bottom: 20px; line-height: 1.5; }
+        .completion-code-box {
+            background: #f1f2f6; padding: 20px; border-radius: 12px; border: 2px dashed #3498db; margin-bottom: 25px;
+        }
+        .completion-code-label { font-size: 16px; color: #7f8fa6; margin-bottom: 5px; }
+        .completion-code { font-size: 48px; font-weight: bold; color: #e74c3c; letter-spacing: 6px; font-family: monospace;}
+        .close-btn { 
+            background: #3498db; color: white; border: none; padding: 12px 30px; 
+            border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; transition: 0.2s;
+        }
+        .close-btn:hover { background: #2980b9; }
     </style>
 </head>
 <body>
@@ -219,6 +247,18 @@
             <button id="main-action-btn" class="main-btn" onclick="handleMainAction()">判定する</button>
             <div id="feedback-msg" class="feedback-msg"></div>
         </div>
+    </div>
+</div>
+
+<div id="all-clear-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-title">🎉 全問クリア！ 🎉</div>
+        <div class="modal-text">すべての化学反応式を完成させたね！<br>下の完了コードを先生に報告しよう。</div>
+        <div class="completion-code-box">
+            <div class="completion-code-label">完了コード</div>
+            <div id="completion-code-display" class="completion-code"></div>
+        </div>
+        <button class="close-btn" onclick="closeModal()">閉じる</button>
     </div>
 </div>
 
@@ -414,20 +454,17 @@
         let allCorrect = true;
 
         ['reactants', 'products'].forEach(side => {
-            // 正解となる物質名の配列をコピー（重複を避けて順不同判定するため）
             let expectedNames = p[side].map(item => item.name);
             
             p[side].forEach((_, idx) => {
                 const inputEl = document.getElementById(`input-name-${side}-${idx}`);
-                const val = inputEl.value.replace(/\s+/g, ''); // 空白除去
+                const val = inputEl.value.replace(/\s+/g, ''); 
                 
-                // 正解リストに含まれているか探す
                 const matchIndex = expectedNames.indexOf(val);
                 
                 if (matchIndex !== -1) {
                     inputEl.classList.add("correct");
                     inputEl.classList.remove("incorrect");
-                    // 一度マッチした名前はリストから削除（同じ正しい名前を2回書くのを防ぐ）
                     expectedNames.splice(matchIndex, 1);
                 } else {
                     inputEl.classList.add("incorrect");
@@ -436,7 +473,6 @@
                 }
             });
             
-            // 入力欄に間違いがなくても、正解リストに残りがあれば不正解とする
             if (expectedNames.length > 0) {
                 allCorrect = false;
             }
@@ -501,7 +537,6 @@
                 const inputEl = document.getElementById(`input-${side}-${idx}`);
                 const bubbleEl = document.getElementById(`bubble-${side}-${idx}`);
                 
-                // 下付き文字を通常の数字に戻してから、半角に変換して判定する
                 const revertedVal = revertSubscript(inputEl.value);
                 const formattedVal = toHalfWidth(revertedVal);
                 
@@ -666,6 +701,21 @@
         document.getElementById('main-action-btn').innerText = "完成した式を確認する";
     }
 
+    // --- 全問クリア時の処理 ---
+    function showAllClearModal() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const code = hours + minutes; // 例: 1310
+        
+        document.getElementById('completion-code-display').innerText = code;
+        document.getElementById('all-clear-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('all-clear-modal').classList.add('hidden');
+    }
+
     function checkPhase3() {
         const p = problems[currentProblemIndex];
         let allCorrect = true;
@@ -695,6 +745,11 @@
             
             clearedProblems.add(p.id);
             renderSidebar();
+
+            // 13問すべてクリアしたかチェック
+            if (clearedProblems.size === problems.length) {
+                setTimeout(showAllClearModal, 500); // 0.5秒後にポップアップを表示
+            }
         } else {
             if (hintOne) {
                 setFeedback('惜しい！係数が「1」のときは、数字を書かずに空欄にするルールだよ。', '#e74c3c');
